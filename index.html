@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CLASS BUSTER — 교실 대소동</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #000; color: #ddd; font-family: "Nanum Gothic", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; overflow: hidden; }
+  #wrap { position: fixed; inset: 0; display: grid; place-items: center; background: #000; }
+  #screen { display: block; image-rendering: pixelated; image-rendering: crisp-edges; background: #000;
+    width: min(100vw, calc((100vh - 26px) * 4 / 3)); height: min(calc(100vw * 3 / 4), calc(100vh - 26px)); outline: none; cursor: crosshair; }
+  body.locked #screen { cursor: none; }
+  #hint { position: fixed; left: 0; right: 0; bottom: 0; height: 26px; line-height: 26px; font-size: 12px; text-align: center; color: #8a8a8a; background: #0b0b0b; border-top: 1px solid #1d1d1d; white-space: nowrap; overflow: hidden; }
+  #hint b { color: #d9d9d9; font-weight: 600; }
+  #hint label { margin-left: 14px; }
+  #hint input { vertical-align: middle; width: 90px; accent-color: #b40000; }
+  #hint button { margin-left: 10px; font: inherit; color: #ddd; background: #222; border: 1px solid #444; padding: 1px 8px; cursor: pointer; }
+  #msg { position: absolute; left: 0; top: 0; pointer-events: none; font-weight: 800; color: #e8e8e8;
+    text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; letter-spacing: .02em; white-space: pre; }
+  #overlay { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at center, #2a0606 0%, #0a0000 60%, #000 100%); z-index: 5; }
+  #overlay.hidden { display: none; }
+  .panel { width: min(560px, 92vw); text-align: center; }
+  .logo { font-size: clamp(40px, 9vw, 76px); font-weight: 900; letter-spacing: .04em; line-height: 1; color: #ff2a0a;
+    text-shadow: 0 3px 0 #7a0000, 0 6px 0 #3a0000, 0 0 30px rgba(255,60,0,.45); transform: perspective(400px) rotateX(12deg); }
+  .sub { margin: 14px 0 26px; font-size: 18px; color: #f0c040; font-weight: 800; letter-spacing: .3em; }
+  .progress { height: 8px; background: #200; border: 1px solid #520; margin: 0 auto 10px; width: 80%; }
+  #bar { height: 100%; width: 0; background: linear-gradient(90deg, #a00, #ff6a00); transition: width .15s; }
+  #status { font-size: 13px; color: #b9a9a0; min-height: 1.4em; margin-bottom: 18px; white-space: pre-wrap; }
+  #start { font: 900 22px/1 inherit; font-family: inherit; letter-spacing: .15em; padding: 14px 40px; color: #fff; background: linear-gradient(#c40000, #6b0000);
+    border: 2px solid #ff5a3a; box-shadow: 0 0 0 3px #300, 0 6px 0 #300; cursor: pointer; }
+  #start:disabled { filter: grayscale(1) brightness(.6); cursor: wait; }
+  .keys { margin-top: 26px; display: grid; grid-template-columns: auto auto; gap: 4px 18px; justify-content: center; font-size: 13px; color: #aaa; text-align: left; }
+  .keys b { color: #f0c040; font-weight: 700; }
+  .note { margin-top: 18px; font-size: 11px; color: #6c6c6c; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="screen" width="640" height="400" tabindex="0"></canvas>
+  <div id="msg"></div>
+</div>
+<div id="hint">
+  <b>WASD</b> 이동 · <b>마우스</b> 회전 · <b>클릭/Ctrl</b> 발사 · <b>Space/E</b> 문·스위치 · <b>Shift</b> 달리기 · <b>Alt</b>+방향 옆걸음 · <b>1–7</b> 무기 · <b>Tab</b> 지도 · <b>Esc</b> 메뉴 · <b>F2/F3</b> 저장/불러오기
+  <label>마우스 감도 <input id="sens" type="range" min="1" max="12" step="0.5" value="4"></label>
+  <button id="fs" type="button">전체화면</button>
+</div>
+<div id="overlay">
+  <div class="panel">
+    <div class="logo">CLASS BUSTER</div>
+    <div class="sub">교 실 대 소 동</div>
+    <div class="progress"><div id="bar"></div></div>
+    <div id="status">엔진 준비 중…</div>
+    <button id="start" disabled>게임 시작</button>
+    <div class="keys">
+      <b>WASD / ↑↓</b><span>전진·후진·옆걸음</span>
+      <b>마우스 / ←→</b><span>회전 (화면을 클릭하면 마우스 고정)</span>
+      <b>클릭 · Ctrl</b><span>발사</span>
+      <b>Space · E</b><span>문 열기 · 스위치 · 리프트</span>
+      <b>Shift</b><span>달리기</span>
+      <b>1 – 7</b><span>무기 선택</span>
+      <b>Tab</b><span>자동지도</span>
+      <b>Esc</b><span>메뉴 (저장·불러오기·설정)</span>
+    </div>
+    <div class="note">Doom 엔진(id Software, GPL v2) · Chocolate Doom · doomgeneric 기반<br>게임 데이터: Freedoom(BSD) 개조 · 교육용 비잔혹 그래픽</div>
+  </div>
+</div>
+<script src="runtime.js"></script>
+</body>
+</html>
